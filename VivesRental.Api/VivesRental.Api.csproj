@@ -8,6 +8,18 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.1" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.1" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\VivesRental.Enums\VivesRental.Enums.csproj" />
+    <ProjectReference Include="..\VivesRental.Model\VivesRental.Model.csproj" />
+    <ProjectReference Include="..\VivesRental.Services.Abstractions\VivesRental.Services.Abstractions.csproj" />
+    <ProjectReference Include="..\VivesRental.Services.Model\VivesRental.Services.Model.csproj" />
   </ItemGroup>
 
 </Project>
