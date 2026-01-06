@@ -74,6 +74,27 @@ public class ProductService : IProductService
         return await Get(product.Id);
     }
 
+    public async Task<ProductResult?> Patch(Guid id, ProductPatchRequest patch)
+    {
+        var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == id);
+        if (product == null)
+            return null;
+
+        if (patch.Name != null)
+            product.Name = patch.Name;
+        if (patch.Description != null)
+            product.Description = patch.Description;
+        if (patch.Manufacturer != null)
+            product.Manufacturer = patch.Manufacturer;
+        if (patch.Publisher != null)
+            product.Publisher = patch.Publisher;
+        if (patch.RentalExpiresAfterDays.HasValue)
+            product.RentalExpiresAfterDays = patch.RentalExpiresAfterDays.Value;
+
+        await _context.SaveChangesAsync();
+        return await Get(product.Id);
+    }
+
     /// <summary>
     /// Removes one Product, removes ArticleReservations, removes all linked articles and disconnects OrderLines from articles
     /// </summary>

@@ -13,13 +13,16 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\VivesRental.Enums\VivesRental.Enums.csproj" />
     <ProjectReference Include="..\VivesRental.Model\VivesRental.Model.csproj" />
+    <ProjectReference Include="..\VivesRental.Repository\VivesRental.Repository.csproj" />
     <ProjectReference Include="..\VivesRental.Services.Abstractions\VivesRental.Services.Abstractions.csproj" />
     <ProjectReference Include="..\VivesRental.Services.Model\VivesRental.Services.Model.csproj" />
+    <ProjectReference Include="..\VivesRental.Services\VivesRental.Services.csproj" />
   </ItemGroup>
 
 </Project>

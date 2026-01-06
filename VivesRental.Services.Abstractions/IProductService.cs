@@ -12,5 +12,5 @@ public interface IProductService
     Task<ProductResult?> Edit(Guid id, ProductRequest entity);
     Task<bool> Remove(Guid id);
     Task<bool> GenerateArticles(Guid productId, int amount);
-
+    Task<ProductResult?> Patch(Guid id, ProductPatchRequest patch);
 }

@@ -75,6 +75,25 @@ public class CustomerService : ICustomerService
         return await Get(customer.Id);
     }
 
+    public async Task<CustomerResult?> Patch(Guid id, CustomerPatchRequest patch)
+    {
+        var customer = await _context.Customers.FirstOrDefaultAsync(c => c.Id == id);
+        if (customer == null)
+            return null;
+
+        if (patch.FirstName != null)
+            customer.FirstName = patch.FirstName;
+        if (patch.LastName != null)
+            customer.LastName = patch.LastName;
+        if (patch.Email != null)
+            customer.Email = patch.Email;
+        if (patch.PhoneNumber != null)
+            customer.PhoneNumber = patch.PhoneNumber;
+
+        await _context.SaveChangesAsync();
+        return await Get(customer.Id);
+    }
+
     /// <summary>
     /// Removes one Customer and disconnects Orders from the customer
     /// </summary>

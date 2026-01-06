@@ -10,5 +10,6 @@ public interface ICustomerService
     Task<List<CustomerResult>> Find(CustomerFilter? filter);
     Task<CustomerResult?> Create(CustomerRequest entity);
     Task<CustomerResult?> Edit(Guid id, CustomerRequest entity);
+    Task<CustomerResult?> Patch(Guid id, CustomerPatchRequest patch);
     Task<bool> Remove(Guid id);
 }
