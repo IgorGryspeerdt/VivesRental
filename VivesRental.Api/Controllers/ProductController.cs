@@ -22,18 +22,32 @@ namespace VivesRental.Api.Controllers
         [HttpGet]
         public async Task<IActionResult> Get([FromQuery] ProductFilter? filter = null)
         {
-            var products = await _productService.Find(filter);
-            return Ok(products);
+            try
+            {
+                var products = await _productService.Find(filter);
+                return Ok(products);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
         }
 
         // GET: api/Product/{id}
         [HttpGet("{id}")]
         public async Task<IActionResult> Get(Guid id)
         {
-            var product = await _productService.Get(id);
-            if (product == null)
-                return NotFound();
-            return Ok(product);
+            try
+            {
+                var product = await _productService.Get(id);
+                if (product == null)
+                    return NotFound(new { error = "Product not found." });
+                return Ok(product);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
         }
 
         // POST: api/Product
@@ -43,11 +57,22 @@ namespace VivesRental.Api.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var result = await _productService.Create(request);
-            if (result == null)
-                return BadRequest();
+            try
+            {
+                var result = await _productService.Create(request);
+                if (result == null)
+                    return BadRequest(new { error = "Could not create product." });
 
-            return CreatedAtAction(nameof(Get), new { id = result.Id }, result);
+                return CreatedAtAction(nameof(Get), new { id = result.Id }, result);
+            }
+            catch (ArgumentException aex)
+            {
+                return BadRequest(new { error = aex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
         }
 
         // PUT: api/Product/{id}
@@ -57,22 +82,52 @@ namespace VivesRental.Api.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var result = await _productService.Edit(id, request);
-            if (result == null)
-                return NotFound();
+            try
+            {
+                var result = await _productService.Edit(id, request);
+                if (result == null)
+                    return NotFound(new { error = "Product not found." });
 
-            return Ok(result);
+                return Ok(result);
+            }
+            catch (ArgumentException aex)
+            {
+                return BadRequest(new { error = aex.Message });
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return NotFound(new { error = "Product already deleted or concurrency error." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
         }
 
         // PATCH: api/Product/{id}
         [HttpPatch("{id}")]
         public async Task<IActionResult> Patch(Guid id, [FromBody] ProductPatchRequest request)
         {
-            var result = await _productService.Patch(id, request);
-            if (result == null)
-                return NotFound();
+            try
+            {
+                var result = await _productService.Patch(id, request);
+                if (result == null)
+                    return NotFound(new { error = "Product not found." });
 
-            return Ok(result);
+                return Ok(result);
+            }
+            catch (ArgumentException aex)
+            {
+                return BadRequest(new { error = aex.Message });
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return NotFound(new { error = "Product already deleted or concurrency error." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
         }
 
         // DELETE: api/Product/{id}
@@ -83,12 +138,16 @@ namespace VivesRental.Api.Controllers
             {
                 var success = await _productService.Remove(id);
                 if (!success)
-                    return NotFound();
+                    return NotFound(new { error = "Product not found or could not be deleted." });
                 return NoContent();
             }
             catch (DbUpdateConcurrencyException)
             {
-                return NotFound();
+                return NotFound(new { error = "Product already deleted or concurrency error." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
             }
         }
     }

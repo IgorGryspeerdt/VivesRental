@@ -22,18 +22,32 @@ namespace VivesRental.Api.Controllers
         [HttpGet]
         public async Task<IActionResult> Get([FromQuery] ArticleFilter? filter = null)
         {
-            var articles = await _articleService.Find(filter);
-            return Ok(articles);
+            try
+            {
+                var articles = await _articleService.Find(filter);
+                return Ok(articles);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
         }
 
         // GET: api/Article/{id}
         [HttpGet("{id}")]
         public async Task<IActionResult> Get(Guid id)
         {
-            var article = await _articleService.Get(id);
-            if (article == null)
-                return NotFound();
-            return Ok(article);
+            try
+            {
+                var article = await _articleService.Get(id);
+                if (article == null)
+                    return NotFound(new { error = "Article not found." });
+                return Ok(article);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
         }
 
         // POST: api/Article
@@ -43,22 +57,40 @@ namespace VivesRental.Api.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var result = await _articleService.Create(request);
-            if (result == null)
-                return BadRequest();
+            try
+            {
+                var result = await _articleService.Create(request);
+                if (result == null)
+                    return BadRequest(new { error = "Could not create article." });
 
-            return CreatedAtAction(nameof(Get), new { id = result.Id }, result);
+                return CreatedAtAction(nameof(Get), new { id = result.Id }, result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
         }
 
         // PATCH: api/Article/{id}/status
         [HttpPatch("{id}/status")]
         public async Task<IActionResult> UpdateStatus(Guid id, [FromBody] ArticleStatus status)
         {
-            var success = await _articleService.UpdateStatus(id, status);
-            if (!success)
-                return NotFound();
+            try
+            {
+                var success = await _articleService.UpdateStatus(id, status);
+                if (!success)
+                    return NotFound(new { error = "Article not found or status update failed." });
 
-            return NoContent();
+                return NoContent();
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
         }
 
         // DELETE: api/Article/{id}
@@ -69,12 +101,16 @@ namespace VivesRental.Api.Controllers
             {
                 var success = await _articleService.Remove(id);
                 if (!success)
-                    return NotFound();
+                    return NotFound(new { error = "Article not found or could not be deleted." });
                 return NoContent();
             }
             catch (DbUpdateConcurrencyException)
             {
-                return NotFound();
+                return NotFound(new { error = "Article already deleted or concurrency error." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
             }
         }
     }

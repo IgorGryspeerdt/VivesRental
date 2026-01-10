@@ -21,18 +21,32 @@ namespace VivesRental.Api.Controllers
         [HttpGet]
         public async Task<IActionResult> Get([FromQuery] ArticleReservationFilter? filter = null)
         {
-            var reservations = await _reservationService.Find(filter);
-            return Ok(reservations);
+            try
+            {
+                var reservations = await _reservationService.Find(filter);
+                return Ok(reservations);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
         }
 
         // GET: api/ArticleReservation/{id}
         [HttpGet("{id}")]
         public async Task<IActionResult> Get(Guid id)
         {
-            var reservation = await _reservationService.Get(id);
-            if (reservation == null)
-                return NotFound();
-            return Ok(reservation);
+            try
+            {
+                var reservation = await _reservationService.Get(id);
+                if (reservation == null)
+                    return NotFound(new { error = "Reservation not found." });
+                return Ok(reservation);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
         }
 
         // POST: api/ArticleReservation
@@ -42,11 +56,23 @@ namespace VivesRental.Api.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var result = await _reservationService.Create(request);
-            if (result == null)
-                return BadRequest();
+            try
+            {
+                var result = await _reservationService.Create(request);
+                if (result == null)
+                    return BadRequest(new { error = "Could not create reservation." });
 
-            return CreatedAtAction(nameof(Get), new { id = result.Id }, result);
+                return CreatedAtAction(nameof(Get), new { id = result.Id }, result);
+            }
+            catch (ArgumentException aex)
+            {
+                // For example: validation from service layer
+                return BadRequest(new { error = aex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
         }
 
         // DELETE: api/ArticleReservation/{id}
@@ -57,12 +83,16 @@ namespace VivesRental.Api.Controllers
             {
                 var success = await _reservationService.Remove(id);
                 if (!success)
-                    return NotFound();
+                    return NotFound(new { error = "Reservation not found or could not be deleted." });
                 return NoContent();
             }
             catch (DbUpdateConcurrencyException)
             {
-                return NotFound();
+                return NotFound(new { error = "Reservation already deleted or concurrency error." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
             }
         }
     }

@@ -21,18 +21,32 @@ namespace VivesRental.Api.Controllers
         [HttpGet]
         public async Task<IActionResult> Get([FromQuery] CustomerFilter? filter = null)
         {
-            var customers = await _customerService.Find(filter);
-            return Ok(customers);
+            try
+            {
+                var customers = await _customerService.Find(filter);
+                return Ok(customers);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
         }
 
         // GET: api/Customer/{id}
         [HttpGet("{id}")]
         public async Task<IActionResult> Get(Guid id)
         {
-            var customer = await _customerService.Get(id);
-            if (customer == null)
-                return NotFound();
-            return Ok(customer);
+            try
+            {
+                var customer = await _customerService.Get(id);
+                if (customer == null)
+                    return NotFound(new { error = "Customer not found." });
+                return Ok(customer);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
         }
 
         // POST: api/Customer
@@ -42,11 +56,22 @@ namespace VivesRental.Api.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var result = await _customerService.Create(request);
-            if (result == null)
-                return BadRequest();
+            try
+            {
+                var result = await _customerService.Create(request);
+                if (result == null)
+                    return BadRequest(new { error = "Could not create customer." });
 
-            return CreatedAtAction(nameof(Get), new { id = result.Id }, result);
+                return CreatedAtAction(nameof(Get), new { id = result.Id }, result);
+            }
+            catch (ArgumentException aex)
+            {
+                return BadRequest(new { error = aex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
         }
 
         // PUT: api/Customer/{id}
@@ -56,22 +81,52 @@ namespace VivesRental.Api.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var result = await _customerService.Edit(id, request);
-            if (result == null)
-                return NotFound();
+            try
+            {
+                var result = await _customerService.Edit(id, request);
+                if (result == null)
+                    return NotFound(new { error = "Customer not found." });
 
-            return Ok(result);
+                return Ok(result);
+            }
+            catch (ArgumentException aex)
+            {
+                return BadRequest(new { error = aex.Message });
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return NotFound(new { error = "Customer already deleted or concurrency error." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
         }
 
         // PATCH: api/Customer/{id}
         [HttpPatch("{id}")]
         public async Task<IActionResult> Patch(Guid id, [FromBody] CustomerPatchRequest request)
         {
-            var result = await _customerService.Patch(id, request);
-            if (result == null)
-                return NotFound();
+            try
+            {
+                var result = await _customerService.Patch(id, request);
+                if (result == null)
+                    return NotFound(new { error = "Customer not found." });
 
-            return Ok(result);
+                return Ok(result);
+            }
+            catch (ArgumentException aex)
+            {
+                return BadRequest(new { error = aex.Message });
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return NotFound(new { error = "Customer already deleted or concurrency error." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
         }
 
         // DELETE: api/Customer/{id}
@@ -82,12 +137,16 @@ namespace VivesRental.Api.Controllers
             {
                 var success = await _customerService.Remove(id);
                 if (!success)
-                    return NotFound();
+                    return NotFound(new { error = "Customer not found or could not be deleted." });
                 return NoContent();
             }
             catch (DbUpdateConcurrencyException)
             {
-                return NotFound();
+                return NotFound(new { error = "Customer already deleted or concurrency error." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
             }
         }
     }
