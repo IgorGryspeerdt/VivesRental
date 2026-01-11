@@ -1,8 +1,7 @@
 ﻿using System.Net;
 using System.Net.Http.Json;
-using VivesRental.Services.Model.Requests;
 using VivesRental.Services.Model.Results;
-using VivesRental.Ui.Blazor.Sdk.Models;
+using VivesRental.Services.Model.Requests;
 
 namespace VivesRental.Ui.Blazor.Sdk
 {

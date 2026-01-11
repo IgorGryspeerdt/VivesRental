@@ -1,0 +1,102 @@
+﻿@page "/articles"
+@inject VivesRental.Ui.Blazor.Sdk.ArticleSdkService ArticleService
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+@using VivesRental.Services.Model.Results
+@using VivesRental.Enums
+
+<PageTitle>Articles</PageTitle>
+
+<h3>Articles</h3>
+
+<button class="btn btn-primary mb-3" @onclick="CreateNew" disabled="@isBusy">Add new</button>
+
+@if (isBusy)
+{
+    <p>Loading...</p>
+}
+else if (!string.IsNullOrEmpty(error))
+{
+    <div class="alert alert-danger">@error</div>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th>Status</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var a in articles)
+            {
+                <tr>
+                    <td>@a.ProductName</td>
+                    <td>@a.Status</td>
+                    <td>
+                        <a class="btn btn-sm btn-link" @onclick="() => ShowDetails(a.Id)">Details</a>
+
+                        <AuthorizeView Roles="Medewerker">
+                            <Authorized>
+                                <a class="btn btn-sm btn-link" @onclick="() => Edit(a.Id)">Edit</a>
+                                <button class="btn btn-sm btn-danger" @onclick="() => ConfirmDelete(a.Id)">Delete</button>
+                            </Authorized>
+                        </AuthorizeView>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<ArticleResult> articles = new();
+    private bool isBusy = true;
+    private string? error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Load();
+    }
+
+    private async Task Load()
+    {
+        isBusy = true;
+        error = null;
+        try
+        {
+            articles = await ArticleService.GetAll();
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            isBusy = false;
+            StateHasChanged();
+        }
+    }
+
+    private void CreateNew() => Navigation.NavigateTo("/articles/edit");
+
+    private void ShowDetails(Guid id) => Navigation.NavigateTo($"/articles/{id}");
+
+    private void Edit(Guid id) => Navigation.NavigateTo($"/articles/edit/{id}");
+
+    private async Task ConfirmDelete(Guid id)
+    {
+        var confirmed = await JS.InvokeAsync<bool>("confirm", "Are you sure you want to delete this article?");
+        if (!confirmed) return;
+
+        var ok = await ArticleService.Delete(id);
+        if (!ok)
+        {
+            error = "Delete failed.";
+            return;
+        }
+        await Load();
+    }
+}

@@ -37,6 +37,7 @@ builder.Services.AddHttpClient("VivesRentalApi", client =>
 
 // SDKs
 builder.Services.AddScoped<IdentitySdkService>();
-builder.Services.AddScoped<ProductSdkService>(); 
+builder.Services.AddScoped<ProductSdkService>();
+builder.Services.AddScoped<ArticleSdkService>(); 
 
 await builder.Build().RunAsync();

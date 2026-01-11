@@ -1,0 +1,158 @@
+﻿@page "/articles/edit"
+@page "/articles/edit/{id:guid}"
+@inject VivesRental.Ui.Blazor.Sdk.ArticleSdkService ArticleService
+@inject VivesRental.Ui.Blazor.Sdk.ProductSdkService ProductService
+@inject NavigationManager Navigation
+@using System.ComponentModel.DataAnnotations
+@using VivesRental.Services.Model.Requests
+@using VivesRental.Services.Model.Results
+@using VivesRental.Enums
+@using Microsoft.AspNetCore.Components.Authorization
+
+<PageTitle>Article edit</PageTitle>
+
+<h3>@(isEdit ? "Edit article" : "Create article")</h3>
+
+@if (isBusy)
+{
+    <p>Loading...</p>
+}
+else if (!string.IsNullOrEmpty(error))
+{
+    <div class="alert alert-danger">@error</div>
+}
+else
+{
+    <AuthorizeView Roles="Medewerker">
+        <Authorized>
+            <EditForm Model="model" OnValidSubmit="HandleSubmit">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                @if (!isEdit)
+                {
+                    <div class="mb-3">
+                        <label class="form-label">Product</label>
+                        <InputSelect @bind-Value="model.ProductId" class="form-select">
+                            <option value="">-- select product --</option>
+                            @foreach (var p in products)
+                            {
+                                <option value="@p.Id">@p.Name</option>
+                            }
+                        </InputSelect>
+                        <ValidationMessage For="@(() => model.ProductId)" />
+                    </div>
+                }
+                else
+                {
+                    <div class="mb-3">
+                        <label class="form-label">Product</label>
+                        <InputText class="form-control" Value="@(existing?.ProductName ?? string.Empty)" Disabled="true" />
+                    </div>
+                }
+
+                <div class="mb-3">
+                    <label class="form-label">Status</label>
+                    <InputSelect @bind-Value="model.Status" class="form-select">
+                        @foreach (var s in Enum.GetValues(typeof(ArticleStatus)).Cast<ArticleStatus>())
+                        {
+                            <option value="@s">@s</option>
+                        }
+                    </InputSelect>
+                </div>
+
+                <button class="btn btn-primary" type="submit">Save</button>
+                <button class="btn btn-secondary ms-2" type="button" @onclick="Cancel">Cancel</button>
+            </EditForm>
+        </Authorized>
+        <NotAuthorized>
+            <div class="alert alert-warning">Only users in role <strong>Medewerker</strong> can create or edit articles. Please sign in with an account with that role.</div>
+        </NotAuthorized>
+    </AuthorizeView>
+}
+
+@code {
+    [Parameter] public Guid? Id { get; set; }
+
+    private ArticleRequest model = new();
+    private ArticleResult? existing;
+    private List<ProductResult> products = new();
+    private bool isEdit => Id.HasValue;
+    private bool isBusy = false;
+    private string? error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        isBusy = true;
+        try
+        {
+            // load product list for creation (shared ProductResult)
+            products = await ProductService.GetAll();
+
+            if (isEdit)
+            {
+                existing = await ArticleService.Get(Id!.Value);
+                if (existing == null)
+                {
+                    error = "Article not found.";
+                    return;
+                }
+
+                // For editing we only allow status change (API exposes PATCH {id}/status)
+                model = new ArticleRequest
+                {
+                    ProductId = existing.ProductId,
+                    Status = existing.Status
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private async Task HandleSubmit()
+    {
+        error = null;
+        isBusy = true;
+        try
+        {
+            if (isEdit)
+            {
+                // patch status
+                var ok = await ArticleService.UpdateStatus(Id!.Value, model.Status);
+                if (!ok)
+                {
+                    error = "Update failed.";
+                    return;
+                }
+                Navigation.NavigateTo($"/articles/{Id.Value}");
+            }
+            else
+            {
+                var created = await ArticleService.Create(model);
+                if (created == null)
+                {
+                    error = "Create failed.";
+                    return;
+                }
+                Navigation.NavigateTo($"/articles/{created.Id}");
+            }
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private void Cancel() => Navigation.NavigateTo("/articles");
+}

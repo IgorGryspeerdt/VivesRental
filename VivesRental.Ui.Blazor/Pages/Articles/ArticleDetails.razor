@@ -1,0 +1,68 @@
+﻿@page "/articles/{id:guid}"
+@inject VivesRental.Ui.Blazor.Sdk.ArticleSdkService ArticleService
+@inject NavigationManager Navigation
+@using VivesRental.Services.Model.Results
+@using VivesRental.Enums
+
+<PageTitle>Article details</PageTitle>
+
+@if (isBusy)
+{
+    <p>Loading...</p>
+}
+else if (!string.IsNullOrEmpty(error))
+{
+    <div class="alert alert-danger">@error</div>
+}
+else if (article == null)
+{
+    <div class="alert alert-warning">Article not found.</div>
+}
+else
+{
+    <h3>Article</h3>
+    <dl class="row">
+        <dt class="col-sm-3">Product</dt>
+        <dd class="col-sm-9">@article.ProductName</dd>
+
+        <dt class="col-sm-3">Status</dt>
+        <dd class="col-sm-9">@article.Status</dd>
+    </dl>
+
+    <button class="btn btn-secondary" @onclick="Back">Back</button>
+    <button class="btn btn-primary" @onclick="() => Edit(article.Id)">Edit</button>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private ArticleResult? article;
+    private bool isBusy = true;
+    private string? error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Load();
+    }
+
+    private async Task Load()
+    {
+        isBusy = true;
+        error = null;
+        try
+        {
+            article = await ArticleService.Get(Id);
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private void Back() => Navigation.NavigateTo("/articles");
+    private void Edit(Guid id) => Navigation.NavigateTo($"/articles/edit/{id}");
+}
