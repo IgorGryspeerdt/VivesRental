@@ -1,0 +1,77 @@
+﻿@page "/account/login"
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Components.Authorization
+@inject VivesRental.Ui.Blazor.Sdk.IdentitySdkService IdentityService
+@inject VivesRental.Ui.Blazor.Security.ITokenStore TokenStore
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
+
+<h3>Sign in</h3>
+
+<EditForm Model="@model" OnValidSubmit="HandleSignIn">
+    <DataAnnotationsValidator />
+    @if (errors.Any())
+    {
+        <div class="alert alert-danger">
+            <ul>
+                @foreach (var error in errors)
+                {
+                    <li>@error</li>
+                }
+            </ul>
+        </div>
+    }
+    <div class="mb-3">
+        <label class="form-label">Username</label>
+        <InputText @bind-Value="model.Username" class="form-control" />
+        <ValidationMessage For="@(() => model.Username)" />
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Password</label>
+        <InputText type="password" @bind-Value="model.Password" class="form-control" />
+        <ValidationMessage For="@(() => model.Password)" />
+    </div>
+    <button class="btn btn-primary" type="submit">Sign in</button>
+</EditForm>
+
+@code {
+    private SignInModel model = new();
+    private List<string> errors = new();
+
+    public class SignInModel
+    {
+        [Required]
+        public string Username { get; set; } = string.Empty;
+
+        [Required]
+        public string Password { get; set; } = string.Empty;
+    }
+
+    private async Task HandleSignIn()
+    {
+        errors.Clear();
+
+        var request = new VivesRental.Ui.Blazor.Sdk.Models.SignInRequest
+        {
+            Username = model.Username,
+            Password = model.Password
+        };
+
+        var result = await IdentityService.SignIn(request);
+
+        if (result == null || string.IsNullOrWhiteSpace(result.Token))
+        {
+            errors = result?.Messages?.Select(m => m.Description ?? "Login failed").ToList() ?? new List<string> { "Login failed" };
+            return;
+        }
+
+        await TokenStore.SetToken(result.Token);
+
+        if (AuthStateProvider is VivesRental.Ui.Blazor.Services.TokenAuthenticationStateProvider provider)
+        {
+            provider.NotifyUserAuthentication();
+        }
+
+        Navigation.NavigateTo("/");
+    }
+}

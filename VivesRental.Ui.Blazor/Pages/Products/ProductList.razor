@@ -1,0 +1,98 @@
+﻿@page "/products"
+@inject VivesRental.Ui.Blazor.Sdk.ProductSdkService ProductService
+@inject NavigationManager Navigation
+@using VivesRental.Ui.Blazor.Sdk.Models
+@using Microsoft.AspNetCore.Components.Authorization
+@using VivesRental.Services.Model.Results
+
+<PageTitle>Products</PageTitle>
+
+<h3>Products</h3>
+
+<button class="btn btn-primary mb-3" @onclick="CreateNew" disabled="@isBusy">Add new</button>
+
+@if (isBusy)
+{
+    <p>Loading...</p>
+}
+else if (!string.IsNullOrEmpty(error))
+{
+    <div class="alert alert-danger">@error</div>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Available</th>
+                <th>Articles</th>
+                <th>Expires (days)</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var p in products)
+            {
+                <tr>
+                    <td>@p.Name</td>
+                    <td>@p.NumberOfAvailableArticles</td>
+                    <td>@p.NumberOfArticles</td>
+                    <td>@p.RentalExpiresAfterDays</td>
+                    <td>
+                        <a class="btn btn-sm btn-link" @onclick="() => ShowDetails(p.Id)">Details</a>
+                        <a class="btn btn-sm btn-link" @onclick="() => Edit(p.Id)">Edit</a>
+                        <button class="btn btn-sm btn-danger" @onclick="() => Delete(p.Id)">Delete</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<ProductResult> products = new();
+    private bool isBusy = true;
+    private string? error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Load();
+    }
+
+    private async Task Load()
+    {
+        isBusy = true;
+        error = null;
+        try
+        {
+            products = await ProductService.GetAll();
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            isBusy = false;
+            StateHasChanged();
+        }
+    }
+
+    private void CreateNew() => Navigation.NavigateTo("/products/edit");
+
+    private void ShowDetails(Guid id) => Navigation.NavigateTo($"/products/{id}");
+
+    private void Edit(Guid id) => Navigation.NavigateTo($"/products/edit/{id}");
+
+    private async Task Delete(Guid id)
+    {
+        var ok = await ProductService.Delete(id);
+        if (!ok)
+        {
+            error = "Delete failed.";
+            return;
+        }
+        await Load();
+    }
+}

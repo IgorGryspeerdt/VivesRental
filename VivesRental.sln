@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
-VisualStudioVersion = 18.1.11312.151 d18.0
+VisualStudioVersion = 18.1.11312.151
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VivesRental.Model", "VivesRental.Model\VivesRental.Model.csproj", "{9424B442-9455-4A84-AC3F-7AB0677FEB26}"
 EndProject
@@ -34,6 +34,11 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VivesRental.Ui.Blazor", "VivesRental.Ui.Blazor\VivesRental.Ui.Blazor.csproj", "{C1473E9C-5DF2-459D-BF44-0DA237573260}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Api", "Api", "{54F7D8CA-6915-4597-B1C1-D533CDD326C1}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{16CF58EC-BB00-4EAB-860F-6FC7B64B7F23}"
+	ProjectSection(SolutionItems) = preProject
+		..\..\..\..\..\Downloads\blazor-jwt-authentication-guide_.md = ..\..\..\..\..\Downloads\blazor-jwt-authentication-guide_.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

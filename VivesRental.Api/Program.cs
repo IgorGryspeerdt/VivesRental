@@ -64,6 +64,18 @@ builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IArticleReservationService, ArticleReservationService>();
 builder.Services.AddScoped<IOrderLineService, OrderLineService>();
 
+// CORS policy
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowBlazorClient", policy =>
+    {
+        policy.WithOrigins("https://localhost:7236", "http://localhost:5045") // add your Blazor origins
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
+
 var app = builder.Build();
 
 // Development middleware
@@ -74,6 +86,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// Use CORS before authentication/authorization
+app.UseCors("AllowBlazorClient");
 
 // Authentication/Authorization middleware
 app.UseAuthentication();

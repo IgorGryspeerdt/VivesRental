@@ -1,0 +1,77 @@
+﻿@page "/products/{id:guid}"
+@inject VivesRental.Ui.Blazor.Sdk.ProductSdkService ProductService
+@inject NavigationManager Navigation
+@using VivesRental.Services.Model.Results
+@using VivesRental.Ui.Blazor.Sdk.Models
+
+<PageTitle>Product details</PageTitle>
+
+@if (isBusy)
+{
+    <p>Loading...</p>
+}
+else if (!string.IsNullOrEmpty(error))
+{
+    <div class="alert alert-danger">@error</div>
+}
+else if (product == null)
+{
+    <div class="alert alert-warning">Product not found.</div>
+}
+else
+{
+    <h3>@product.Name</h3>
+    <dl class="row">
+        <dt class="col-sm-3">Description</dt>
+        <dd class="col-sm-9">@product.Description</dd>
+
+        <dt class="col-sm-3">Manufacturer</dt>
+        <dd class="col-sm-9">@product.Manufacturer</dd>
+
+        <dt class="col-sm-3">Publisher</dt>
+        <dd class="col-sm-9">@product.Publisher</dd>
+
+        <dt class="col-sm-3">Rental expires after (days)</dt>
+        <dd class="col-sm-9">@product.RentalExpiresAfterDays</dd>
+
+        <dt class="col-sm-3">Available / Total</dt>
+        <dd class="col-sm-9">@product.NumberOfAvailableArticles / @product.NumberOfArticles</dd>
+    </dl>
+
+    <button class="btn btn-secondary" @onclick="Back">Back</button>
+    <button class="btn btn-primary" @onclick="() => Edit(product.Id)">Edit</button>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private ProductResult? product;
+    private bool isBusy = true;
+    private string? error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Load();
+    }
+
+    private async Task Load()
+    {
+        isBusy = true;
+        error = null;
+        try
+        {
+            product = await ProductService.Get(Id);
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private void Back() => Navigation.NavigateTo("/products");
+    private void Edit(Guid id) => Navigation.NavigateTo($"/products/edit/{id}");
+}
