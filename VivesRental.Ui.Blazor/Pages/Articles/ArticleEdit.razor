@@ -24,8 +24,8 @@ else if (!string.IsNullOrEmpty(error))
 else
 {
     <AuthorizeView Roles="Medewerker">
-        <Authorized>
-            <EditForm Model="model" OnValidSubmit="HandleSubmit">
+        <Authorized Context="auth">
+            <EditForm Model="model" OnValidSubmit="HandleSubmit" Context="editContext">
                 <DataAnnotationsValidator />
                 <ValidationSummary />
 
@@ -98,7 +98,7 @@ else
                     return;
                 }
 
-                // For editing we only allow status change (API exposes PATCH {id}/status)
+                // For editing we only allow status change
                 model = new ArticleRequest
                 {
                     ProductId = existing.ProductId,
@@ -124,7 +124,6 @@ else
         {
             if (isEdit)
             {
-                // patch status
                 var ok = await ArticleService.UpdateStatus(Id!.Value, model.Status);
                 if (!ok)
                 {

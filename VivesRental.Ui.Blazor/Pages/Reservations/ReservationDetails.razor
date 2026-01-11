@@ -1,0 +1,102 @@
+﻿@page "/reservations/{id:guid}"
+@inject VivesRental.Ui.Blazor.Sdk.ArticleReservationSdkService ReservationService
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+@using VivesRental.Services.Model.Results
+
+<PageTitle>Reservation details</PageTitle>
+
+@if (isBusy)
+{
+    <p>Loading...</p>
+}
+else if (!string.IsNullOrEmpty(error))
+{
+    <div class="alert alert-danger">@error</div>
+}
+else if (reservation == null)
+{
+    <div class="alert alert-warning">Reservation not found.</div>
+}
+else
+{
+    <h3>Reservation</h3>
+
+    <dl class="row">
+        <dt class="col-sm-3">Product</dt>
+        <dd class="col-sm-9">@reservation.ProductName</dd>
+
+        <dt class="col-sm-3">Article</dt>
+        <dd class="col-sm-9">@reservation.ArticleId</dd>
+
+        <dt class="col-sm-3">Customer</dt>
+        <dd class="col-sm-9">@($"{reservation.CustomerFirstName} {reservation.CustomerLastName}")</dd>
+
+        <dt class="col-sm-3">From</dt>
+        <dd class="col-sm-9">@reservation.FromDateTime.ToString("g")</dd>
+
+        <dt class="col-sm-3">Until</dt>
+        <dd class="col-sm-9">@reservation.UntilDateTime.ToString("g")</dd>
+    </dl>
+
+    <AuthorizeView Roles="Medewerker">
+        <Authorized>
+            <button class="btn btn-danger" @onclick="DeleteConfirmed">Delete</button>
+        </Authorized>
+    </AuthorizeView>
+
+    <button class="btn btn-secondary ms-2" @onclick="Back">Back</button>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private ArticleReservationResult? reservation;
+    private bool isBusy = true;
+    private string? error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        isBusy = true;
+        try
+        {
+            reservation = await ReservationService.Get(Id);
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private async Task DeleteConfirmed()
+    {
+        var confirmed = await JS.InvokeAsync<bool>("confirm", "Delete reservation?");
+        if (!confirmed) return;
+
+        isBusy = true;
+        try
+        {
+            var ok = await ReservationService.Delete(Id);
+            if (!ok)
+            {
+                error = "Delete failed.";
+                return;
+            }
+            Navigation.NavigateTo("/reservations");
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private void Back() => Navigation.NavigateTo("/reservations");
+}

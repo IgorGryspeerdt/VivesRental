@@ -22,8 +22,8 @@ else if (!string.IsNullOrEmpty(error))
 else
 {
     <AuthorizeView Roles="Medewerker">
-        <Authorized>
-            <EditForm Model="model" OnValidSubmit="HandleSubmit">
+        <Authorized Context="auth">
+            <EditForm Model="model" OnValidSubmit="HandleSubmit" Context="editContext">
                 <DataAnnotationsValidator />
                 <ValidationSummary />
 

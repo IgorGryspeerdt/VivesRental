@@ -1,0 +1,106 @@
+﻿@page "/reservations"
+@inject VivesRental.Ui.Blazor.Sdk.ArticleReservationSdkService ReservationService
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+@using VivesRental.Services.Model.Results
+
+<PageTitle>Reservations</PageTitle>
+
+<h3>Reservations</h3>
+
+<AuthorizeView Roles="Medewerker">
+    <Authorized>
+        <button class="btn btn-primary mb-3" @onclick="CreateNew" disabled="@isBusy">Add reservation</button>
+    </Authorized>
+</AuthorizeView>
+
+@if (isBusy)
+{
+    <p>Loading...</p>
+}
+else if (!string.IsNullOrEmpty(error))
+{
+    <div class="alert alert-danger">@error</div>
+}
+else
+{
+    <table class="table table-sm">
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th>Article</th>
+                <th>Customer</th>
+                <th>From</th>
+                <th>Until</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var r in reservations)
+            {
+                <tr>
+                    <td>@r.ProductName</td>
+                    <td>@r.ArticleId</td>
+                    <td>@($"{r.CustomerFirstName} {r.CustomerLastName}")</td>
+                    <td>@r.FromDateTime.ToString("g")</td>
+                    <td>@r.UntilDateTime.ToString("g")</td>
+                    <td>
+                        <a class="btn btn-sm btn-link" @onclick="() => ShowDetails(r.Id)">Details</a>
+                        <AuthorizeView Roles="Medewerker">
+                            <Authorized>
+                                <button class="btn btn-sm btn-danger" @onclick="() => ConfirmDelete(r.Id)">Delete</button>
+                            </Authorized>
+                        </AuthorizeView>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<ArticleReservationResult> reservations = new();
+    private bool isBusy = true;
+    private string? error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Load();
+    }
+
+    private async Task Load()
+    {
+        isBusy = true;
+        error = null;
+        try
+        {
+            reservations = await ReservationService.GetAll();
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private void CreateNew() => Navigation.NavigateTo("/reservations/create");
+    private void ShowDetails(Guid id) => Navigation.NavigateTo($"/reservations/{id}");
+
+    private async Task ConfirmDelete(Guid id)
+    {
+        var confirmed = await JS.InvokeAsync<bool>("confirm", "Delete reservation?");
+        if (!confirmed) return;
+
+        var ok = await ReservationService.Delete(id);
+        if (!ok)
+        {
+            error = "Delete failed.";
+            return;
+        }
+
+        await Load();
+    }
+}
