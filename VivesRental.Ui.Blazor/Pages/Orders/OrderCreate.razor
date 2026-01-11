@@ -3,6 +3,7 @@
 @inject VivesRental.Ui.Blazor.Sdk.CustomerSdkService CustomerService
 @inject NavigationManager Navigation
 @using VivesRental.Services.Model.Results
+@using System.ComponentModel.DataAnnotations
 
 <PageTitle>Create order</PageTitle>
 
@@ -18,25 +19,30 @@ else if (!string.IsNullOrEmpty(error))
 }
 else
 {
-    <EditForm Model="selectedCustomerId" OnValidSubmit="CreateOrder">
+    <EditForm Model="model" OnValidSubmit="CreateOrder">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
         <div class="mb-3">
             <label class="form-label">Customer</label>
-            <InputSelect @bind-Value="selectedCustomerId" class="form-select">
+            <InputSelect @bind-Value="model.CustomerId" class="form-select">
                 <option value="">-- select customer --</option>
                 @foreach (var c in customers)
                 {
                     <option value="@c.Id">@($"{c.FirstName} {c.LastName} ({c.Email})")</option>
                 }
             </InputSelect>
+            <ValidationMessage For="@(() => model.CustomerId)" />
         </div>
-        <button class="btn btn-primary" @onclick="CreateOrder">Create</button>
+
+        <button class="btn btn-primary" type="submit">Create</button>
         <button class="btn btn-secondary ms-2" type="button" @onclick="Cancel">Cancel</button>
     </EditForm>
 }
 
 @code {
     private List<CustomerResult> customers = new();
-    private Guid? selectedCustomerId;
+    private CreateOrderModel model = new();
     private bool isBusy = false;
     private string? error;
 
@@ -60,7 +66,7 @@ else
     private async Task CreateOrder()
     {
         error = null;
-        if (selectedCustomerId == null || selectedCustomerId == Guid.Empty)
+        if (model.CustomerId == null || model.CustomerId == Guid.Empty)
         {
             error = "Select a customer.";
             return;
@@ -69,7 +75,7 @@ else
         isBusy = true;
         try
         {
-            var created = await OrderService.Create(selectedCustomerId.Value);
+            var created = await OrderService.Create(model.CustomerId.Value);
             if (created == null)
             {
                 error = "Could not create order.";
@@ -88,4 +94,10 @@ else
     }
 
     private void Cancel() => Navigation.NavigateTo("/orders");
+
+    private class CreateOrderModel
+    {
+        [Required(ErrorMessage = "Customer is required")]
+        public Guid? CustomerId { get; set; }
+    }
 }

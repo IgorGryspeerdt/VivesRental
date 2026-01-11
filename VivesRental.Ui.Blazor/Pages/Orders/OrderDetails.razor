@@ -66,21 +66,23 @@ else
     <div class="row g-3 align-items-end">
         <div class="col-md-4">
             <label class="form-label">Product</label>
-            <InputSelect @bind-Value="selectedProductId" class="form-select" @onchange="LoadAvailableArticles">
+
+            <!-- use plain select to avoid InputSelect ValueExpression requirement -->
+            <select class="form-select" @onchange="OnProductChanged">
                 <option value="">-- select product --</option>
                 @foreach (var p in products)
                 {
-                    <option value="@p.Id">@p.Name</option>
+                    <option value="@p.Id.ToString()">@p.Name</option>
                 }
-            </InputSelect>
+            </select>
         </div>
 
         <div class="col-md-6">
             <label class="form-label">Available articles</label>
-            <select multiple class="form-select" @bind="@selectedArticleIds">
+            <select multiple class="form-select" @ref="availableArticlesSelectRef" @onchange="OnAvailableSelectionChanged">
                 @foreach (var a in availableArticles)
                 {
-                    <option value="@a.Id">@($"{a.ProductName} - {a.Id}")</option>
+                    <option value="@a.Id.ToString()">@($"{a.ProductName} - {a.Id}")</option>
                 }
             </select>
         </div>
@@ -102,10 +104,12 @@ else
     private List<OrderLineResult> orderLines = new();
     private List<VivesRental.Services.Model.Results.ProductResult> products = new();
     private List<VivesRental.Services.Model.Results.ArticleResult> availableArticles = new();
-    private List<Guid> selectedArticleIds = new();
+    private List<string> selectedArticleIds = new();
     private Guid? selectedProductId;
     private bool isBusy = true;
     private string? error;
+
+    private ElementReference availableArticlesSelectRef;
 
     protected override async Task OnInitializedAsync()
     {
@@ -123,6 +127,7 @@ else
             products = await ProductService.GetAll();
             availableArticles.Clear();
             selectedArticleIds.Clear();
+            selectedProductId = null;
         }
         catch (Exception ex)
         {
@@ -134,20 +139,46 @@ else
         }
     }
 
-    private async Task LoadAvailableArticles(ChangeEventArgs? e = null)
+    // explicit async onchange handler — await LoadAvailableArticles so isBusy toggles correctly
+    private async Task OnProductChanged(ChangeEventArgs e)
     {
-        if (!selectedProductId.HasValue || selectedProductId == Guid.Empty)
+        selectedArticleIds = new List<string>();
+        availableArticles = new List<VivesRental.Services.Model.Results.ArticleResult>();
+
+        if (e?.Value is null || string.IsNullOrWhiteSpace(e.Value.ToString()))
         {
-            availableArticles = new List<VivesRental.Services.Model.Results.ArticleResult>();
-            selectedArticleIds.Clear();
+            selectedProductId = null;
             return;
         }
 
+        if (Guid.TryParse(e.Value.ToString(), out var g))
+        {
+            selectedProductId = g;
+            await LoadAvailableArticles();
+        }
+        else
+        {
+            selectedProductId = null;
+        }
+    }
+
+    private async Task LoadAvailableArticles()
+    {
+        // reset lists immediately for responsive UI
+        selectedArticleIds = new List<string>();
+        availableArticles = new List<VivesRental.Services.Model.Results.ArticleResult>();
+
+        if (!selectedProductId.HasValue || selectedProductId == Guid.Empty)
+            return;
+
         isBusy = true;
+        StateHasChanged(); // show loading immediately
+
         try
         {
-            // use dedicated endpoint/SDK
-            availableArticles = await ArticleService.GetAvailable(selectedProductId.Value, DateTime.Now);
+            availableArticles = await ArticleService.GetAvailable(selectedProductId.Value);
+            selectedArticleIds = new List<string>();
+            await JS.InvokeVoidAsync("clearSelectSelection", availableArticlesSelectRef);
         }
         catch (Exception ex)
         {
@@ -156,6 +187,20 @@ else
         finally
         {
             isBusy = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task OnAvailableSelectionChanged(ChangeEventArgs args)
+    {
+        try
+        {
+            var values = await JS.InvokeAsync<string[]>("getSelectedValues", availableArticlesSelectRef);
+            selectedArticleIds = values?.ToList() ?? new List<string>();
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
         }
     }
 
@@ -167,7 +212,18 @@ else
         isBusy = true;
         try
         {
-            var ok = await OrderLineService.RentMany(Id, selectedArticleIds);
+            var guids = selectedArticleIds
+                .Select(s => Guid.TryParse(s, out var g) ? g : Guid.Empty)
+                .Where(g => g != Guid.Empty)
+                .ToList();
+
+            if (!guids.Any())
+            {
+                error = "No valid articles selected.";
+                return;
+            }
+
+            var ok = await OrderLineService.RentMany(Id, guids);
             if (!ok)
             {
                 error = "Renting failed. Some articles may no longer be available.";

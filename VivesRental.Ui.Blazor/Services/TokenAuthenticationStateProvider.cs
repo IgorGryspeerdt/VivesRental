@@ -45,14 +45,18 @@ namespace VivesRental.Ui.Blazor.Services
 
             var claims = jwt.Claims.ToList();
 
-            if (!claims.Any(c => c.Type == ClaimTypes.Name))
+            // Ensure we have a Name claim; prefer the "email" claim from the token
+            if (!claims.Any(c => c.Type == ClaimTypes.Name || c.Type == "email" || c.Type == "sub"))
             {
                 var email = claims.FirstOrDefault(c => c.Type == ClaimTypes.Email || c.Type == "email")?.Value;
                 if (!string.IsNullOrWhiteSpace(email))
-                    claims.Add(new Claim(ClaimTypes.Name, email));
+                    claims.Add(new Claim("email", email));
             }
 
-            var identity = new ClaimsIdentity(claims, "Bearer");
+            // Create identity mapping the token's claim names:
+            // - NameClaimType: "email" (token contains "email")
+            // - RoleClaimType: "role" (token contains "role")
+            var identity = new ClaimsIdentity(claims, "Bearer", "email", "role");
             return identity;
         }
 

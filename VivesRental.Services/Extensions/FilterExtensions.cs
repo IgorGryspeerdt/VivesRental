@@ -45,6 +45,7 @@ public static class FilterExtensions
         }
         if (filter.ReservedFromDateTime.HasValue || filter.ReservedUntilDateTime.HasValue)
         {
+            // Use ArticleExtensions.IsReserved which returns Expression<Func<Article,bool>>
             query = query.Where(ArticleExtensions.IsReserved(filter.ReservedFromDateTime,
                 filter.ReservedUntilDateTime));
         }
@@ -134,8 +135,12 @@ public static class FilterExtensions
             return query;
         }
 
-        query = query.Where(ProductExtensions.IsAvailable(filter.AvailableFromDateTime,
-            filter.AvailableUntilDateTime));
+        // Only apply availability filtering when the caller explicitly supplied availability criteria.
+        if (filter.AvailableFromDateTime.HasValue || filter.AvailableUntilDateTime.HasValue)
+        {
+            query = query.Where(ProductExtensions.IsAvailable(filter.AvailableFromDateTime,
+                filter.AvailableUntilDateTime));
+        }
 
         return query;
     }
