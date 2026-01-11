@@ -46,6 +46,6 @@ builder.Services.AddScoped<ArticleSdkService>();
 builder.Services.AddScoped<CustomerSdkService>();
 builder.Services.AddScoped<OrderSdkService>();
 builder.Services.AddScoped<OrderLineSdkService>();
-builder.Services.AddScoped<ArticleReservationSdkService>(); // <-- added
+builder.Services.AddScoped<ArticleReservationSdkService>();
 
 await builder.Build().RunAsync();

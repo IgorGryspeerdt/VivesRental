@@ -22,7 +22,6 @@
             <div class="d-flex">
                 <AuthorizeView>
                     <Authorized Context="auth">
-                        <!-- auth is an AuthenticationState; access principal via auth.User -->
                         <span class="navbar-text me-2">Hello, @auth.User.Identity?.Name</span>
                         <button class="btn btn-outline-secondary" @onclick="Logout" disabled="@isBusy">Sign out</button>
                     </Authorized>

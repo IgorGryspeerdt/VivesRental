@@ -47,7 +47,6 @@ namespace VivesRental.Ui.Blazor.Sdk
         public async Task<bool> UpdateStatus(Guid id, ArticleStatus status)
         {
             var client = CreateClient();
-            // PATCH {id}/status expects a body with ArticleStatus (enum) - send as JSON
             var json = JsonSerializer.Serialize(status);
             var message = new HttpRequestMessage(new HttpMethod("PATCH"), $"/api/Article/{id}/status")
             {
@@ -66,7 +65,6 @@ namespace VivesRental.Ui.Blazor.Sdk
             return response.IsSuccessStatusCode;
         }
 
-        // New dedicated method
         public async Task<List<ArticleResult>> GetAvailable(Guid productId, DateTime? from = null, DateTime? until = null)
         {
             var client = CreateClient();
