@@ -1,4 +1,5 @@
 using System.Text;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -8,6 +9,7 @@ using VivesRental.Repository.Core;
 using VivesRental.Services;
 using VivesRental.Services.Abstractions;
 using VivesRental.Api.Settings;
+using VivesRental.Api.Data; // added for seeder
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -36,6 +38,10 @@ builder.Services.AddAuthentication(options =>
 .AddJwtBearer(options =>
 {
     options.SaveToken = true;
+
+    // Keep inbound claims raw and explicitly map the name/role claim types that your tokens contain.
+    options.MapInboundClaims = false;
+
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuerSigningKey = true,
@@ -44,7 +50,11 @@ builder.Services.AddAuthentication(options =>
         ValidateAudience = false,
         RequireExpirationTime = true,
         ValidateLifetime = true,
-        ClockSkew = TimeSpan.Zero
+        ClockSkew = TimeSpan.Zero,
+
+        // Your JWT payload uses "role" and "email" claim names — map them here.
+        RoleClaimType = "role",
+        NameClaimType = "email"
     };
 });
 
@@ -96,10 +106,9 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-// Seed a test medewerker (development only)
+// Seed a test medewerker and domain data (development only)
 using (var scope = app.Services.CreateScope())
 {
-
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 
@@ -122,6 +131,9 @@ using (var scope = app.Services.CreateScope())
             await userManager.AddToRoleAsync(user, roleName);
         }
     }
+
+    // Seed domain data (products, articles, customers, reservations, orders)
+    await DatabaseSeeder.SeedAsync(scope.ServiceProvider);
 }
 
 app.Run();

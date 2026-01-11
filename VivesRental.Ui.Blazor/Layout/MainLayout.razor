@@ -1,3 +1,62 @@
 ﻿@inherits LayoutComponentBase
+@inject VivesRental.Ui.Blazor.Security.ITokenStore TokenStore
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
 
-@Body
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/">VivesRental</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="mainNav">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item"><NavLink class="nav-link" href="/">Home</NavLink></li>
+                <li class="nav-item"><NavLink class="nav-link" href="/products">Products</NavLink></li>
+                <li class="nav-item"><NavLink class="nav-link" href="/articles">Articles</NavLink></li>
+                <li class="nav-item"><NavLink class="nav-link" href="/customers">Customers</NavLink></li>
+                <li class="nav-item"><NavLink class="nav-link" href="/orders">Orders</NavLink></li>
+            </ul>
+
+            <div class="d-flex">
+                <AuthorizeView>
+                    <Authorized Context="auth">
+                        <!-- auth is an AuthenticationState; access principal via auth.User -->
+                        <span class="navbar-text me-2">Hello, @auth.User.Identity?.Name</span>
+                        <button class="btn btn-outline-secondary" @onclick="Logout" disabled="@isBusy">Sign out</button>
+                    </Authorized>
+                    <NotAuthorized>
+                        <NavLink class="btn btn-primary" href="/account/login">Sign in</NavLink>
+                    </NotAuthorized>
+                </AuthorizeView>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    @Body
+</div>
+
+@code {
+    private bool isBusy;
+
+    private async Task Logout()
+    {
+        isBusy = true;
+        try
+        {
+            await TokenStore.Clear();
+            if (AuthStateProvider is VivesRental.Ui.Blazor.Services.TokenAuthenticationStateProvider provider)
+            {
+                provider.NotifyUserAuthentication();
+            }
+            Navigation.NavigateTo("/", true);
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+}

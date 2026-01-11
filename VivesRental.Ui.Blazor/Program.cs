@@ -28,6 +28,10 @@ builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddScoped<ITokenStore, LocalStorageTokenStore>();
 builder.Services.AddScoped<TokenAuthenticationStateProvider>();
 builder.Services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredService<TokenAuthenticationStateProvider>());
+
+// Add Blazor client authorization support (required for AuthorizeView, policies, roles, etc.)
+builder.Services.AddAuthorizationCore();
+
 // Authorization handler + named API HttpClient
 builder.Services.AddTransient<AuthorizationHandler>();
 builder.Services.AddHttpClient("VivesRentalApi", client =>
