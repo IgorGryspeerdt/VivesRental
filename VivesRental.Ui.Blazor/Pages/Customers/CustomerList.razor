@@ -1,0 +1,115 @@
+﻿@page "/customers"
+@inject VivesRental.Ui.Blazor.Sdk.CustomerSdkService CustomerService
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+@using VivesRental.Services.Model.Results
+
+<PageTitle>Customers</PageTitle>
+
+<h3>Customers</h3>
+
+<AuthorizeView Roles="Medewerker">
+    <Authorized>
+        <button class="btn btn-primary mb-3" @onclick="CreateNew" disabled="@isBusy">Add new</button>
+    </Authorized>
+    <NotAuthorized>
+        <div class="mb-3">
+            <small class="text-muted">Sign in as a medewerker to create or manage customers.</small>
+        </div>
+    </NotAuthorized>
+</AuthorizeView>
+
+@if (isBusy)
+{
+    <p>Loading...</p>
+}
+else if (!string.IsNullOrEmpty(error))
+{
+    <div class="alert alert-danger">@error</div>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Orders</th>
+                <th>Pending</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var c in customers)
+            {
+                <tr>
+                    <td>@($"{c.FirstName} {c.LastName}")</td>
+                    <td>@c.Email</td>
+                    <td>@c.PhoneNumber</td>
+                    <td>@c.NumberOfOrders</td>
+                    <td>@c.NumberOfPendingOrders</td>
+                    <td>
+                        <a class="btn btn-sm btn-link" @onclick="() => ShowDetails(c.Id)">Details</a>
+                        <AuthorizeView Roles="Medewerker">
+                            <Authorized>
+                                <a class="btn btn-sm btn-link" @onclick="() => Edit(c.Id)">Edit</a>
+                                <button class="btn btn-sm btn-danger" @onclick="() => ConfirmDelete(c.Id)">Delete</button>
+                            </Authorized>
+                        </AuthorizeView>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<CustomerResult> customers = new();
+    private bool isBusy = true;
+    private string? error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Load();
+    }
+
+    private async Task Load()
+    {
+        isBusy = true;
+        error = null;
+        try
+        {
+            customers = await CustomerService.GetAll();
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            isBusy = false;
+            StateHasChanged();
+        }
+    }
+
+    private void CreateNew() => Navigation.NavigateTo("/customers/edit");
+
+    private void ShowDetails(Guid id) => Navigation.NavigateTo($"/customers/{id}");
+
+    private void Edit(Guid id) => Navigation.NavigateTo($"/customers/edit/{id}");
+
+    private async Task ConfirmDelete(Guid id)
+    {
+        var confirmed = await JS.InvokeAsync<bool>("confirm", "Are you sure you want to delete this customer?");
+        if (!confirmed) return;
+
+        var ok = await CustomerService.Delete(id);
+        if (!ok)
+        {
+            error = "Delete failed.";
+            return;
+        }
+        await Load();
+    }
+}

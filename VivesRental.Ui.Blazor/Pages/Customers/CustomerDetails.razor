@@ -1,0 +1,78 @@
+﻿@page "/customers/{id:guid}"
+@inject VivesRental.Ui.Blazor.Sdk.CustomerSdkService CustomerService
+@inject NavigationManager Navigation
+@using VivesRental.Services.Model.Results
+
+<PageTitle>Customer details</PageTitle>
+
+@if (isBusy)
+{
+    <p>Loading...</p>
+}
+else if (!string.IsNullOrEmpty(error))
+{
+    <div class="alert alert-danger">@error</div>
+}
+else if (customer == null)
+{
+    <div class="alert alert-warning">Customer not found.</div>
+}
+else
+{
+    <h3>@($"{customer.FirstName} {customer.LastName}")</h3>
+
+    <dl class="row">
+        <dt class="col-sm-3">Email</dt>
+        <dd class="col-sm-9">@customer.Email</dd>
+
+        <dt class="col-sm-3">Phone</dt>
+        <dd class="col-sm-9">@customer.PhoneNumber</dd>
+
+        <dt class="col-sm-3">Orders</dt>
+        <dd class="col-sm-9">@customer.NumberOfOrders</dd>
+
+        <dt class="col-sm-3">Pending</dt>
+        <dd class="col-sm-9">@customer.NumberOfPendingOrders</dd>
+    </dl>
+
+    <button class="btn btn-secondary" @onclick="Back">Back</button>
+    <AuthorizeView Roles="Medewerker">
+        <Authorized>
+            <button class="btn btn-primary ms-2" @onclick="() => Edit(customer.Id)">Edit</button>
+        </Authorized>
+    </AuthorizeView>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private CustomerResult? customer;
+    private bool isBusy = true;
+    private string? error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Load();
+    }
+
+    private async Task Load()
+    {
+        isBusy = true;
+        error = null;
+        try
+        {
+            customer = await CustomerService.Get(Id);
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private void Back() => Navigation.NavigateTo("/customers");
+    private void Edit(Guid id) => Navigation.NavigateTo($"/customers/edit/{id}");
+}

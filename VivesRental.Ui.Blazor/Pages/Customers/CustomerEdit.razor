@@ -1,0 +1,143 @@
+﻿@page "/customers/edit"
+@page "/customers/edit/{id:guid}"
+@inject VivesRental.Ui.Blazor.Sdk.CustomerSdkService CustomerService
+@inject NavigationManager Navigation
+@using System.ComponentModel.DataAnnotations
+@using VivesRental.Services.Model.Requests
+@using VivesRental.Services.Model.Results
+@using Microsoft.AspNetCore.Components.Authorization
+
+<PageTitle>Customer edit</PageTitle>
+
+<h3>@(isEdit ? "Edit customer" : "Create customer")</h3>
+
+@if (isBusy)
+{
+    <p>Loading...</p>
+}
+else if (!string.IsNullOrEmpty(error))
+{
+    <div class="alert alert-danger">@error</div>
+}
+else
+{
+    <AuthorizeView Roles="Medewerker">
+        <Authorized>
+            <EditForm Model="model" OnValidSubmit="HandleSubmit">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <div class="mb-3">
+                    <label class="form-label">First name</label>
+                    <InputText @bind-Value="model.FirstName" class="form-control" />
+                    <ValidationMessage For="@(() => model.FirstName)" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Last name</label>
+                    <InputText @bind-Value="model.LastName" class="form-control" />
+                    <ValidationMessage For="@(() => model.LastName)" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Email</label>
+                    <InputText @bind-Value="model.Email" class="form-control" />
+                    <ValidationMessage For="@(() => model.Email)" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Phone</label>
+                    <InputText @bind-Value="model.PhoneNumber" class="form-control" />
+                    <ValidationMessage For="@(() => model.PhoneNumber)" />
+                </div>
+
+                <button class="btn btn-primary" type="submit">Save</button>
+                <button class="btn btn-secondary ms-2" type="button" @onclick="Cancel">Cancel</button>
+            </EditForm>
+        </Authorized>
+        <NotAuthorized>
+            <div class="alert alert-warning">Only users in role <strong>Medewerker</strong> can create or edit customers. Please sign in with an account with that role.</div>
+        </NotAuthorized>
+    </AuthorizeView>
+}
+
+@code {
+    [Parameter] public Guid? Id { get; set; }
+
+    private CustomerRequest model = new();
+    private bool isEdit => Id.HasValue;
+    private bool isBusy = false;
+    private string? error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        isBusy = true;
+        try
+        {
+            if (isEdit)
+            {
+                var existing = await CustomerService.Get(Id!.Value);
+                if (existing == null)
+                {
+                    error = "Customer not found.";
+                    return;
+                }
+
+                model = new CustomerRequest
+                {
+                    FirstName = existing.FirstName,
+                    LastName = existing.LastName,
+                    Email = existing.Email,
+                    PhoneNumber = existing.PhoneNumber
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private async Task HandleSubmit()
+    {
+        error = null;
+        isBusy = true;
+        try
+        {
+            if (isEdit)
+            {
+                var updated = await CustomerService.Update(Id!.Value, model);
+                if (updated == null)
+                {
+                    error = "Update failed.";
+                    return;
+                }
+                Navigation.NavigateTo($"/customers/{updated.Id}");
+            }
+            else
+            {
+                var created = await CustomerService.Create(model);
+                if (created == null)
+                {
+                    error = "Create failed.";
+                    return;
+                }
+                Navigation.NavigateTo($"/customers/{created.Id}");
+            }
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private void Cancel() => Navigation.NavigateTo("/customers");
+}
