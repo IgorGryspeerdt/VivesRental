@@ -146,12 +146,8 @@ else
         isBusy = true;
         try
         {
-            var filter = new ArticleFilter
-            {
-                ProductId = selectedProductId,
-                AvailableFromDateTime = DateTime.Now
-            };
-            availableArticles = await ArticleService.GetAll(filter);
+            // use dedicated endpoint/SDK
+            availableArticles = await ArticleService.GetAvailable(selectedProductId.Value, DateTime.Now);
         }
         catch (Exception ex)
         {

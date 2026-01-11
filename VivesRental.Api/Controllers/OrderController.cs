@@ -71,5 +71,34 @@ namespace VivesRental.Api.Controllers
                 return StatusCode(500, new { error = ex.Message });
             }
         }
+
+        // PATCH: api/Order/{id}/return
+        // Mark all order lines for this order as returned (sets ReturnedAt).
+        [HttpPatch("{id}/return")]
+        [Authorize(Roles = "Medewerker")]
+        public async Task<IActionResult> Return(Guid id, [FromBody] DateTime? returnedAt)
+        {
+            try
+            {
+                var when = returnedAt ?? DateTime.Now;
+                var success = await _orderService.Return(id, when);
+                if (!success)
+                    return NotFound(new { error = "Order not found or nothing to return." });
+
+                return NoContent();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return Conflict(new { error = "Concurrency error while returning the order." });
+            }
+            catch (ArgumentException aex)
+            {
+                return BadRequest(new { error = aex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
     }
 }

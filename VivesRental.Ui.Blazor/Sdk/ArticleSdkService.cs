@@ -1,10 +1,11 @@
 ﻿using System.Net;
 using System.Net.Http.Json;
-using System.Text;
 using System.Text.Json;
-using VivesRental.Enums;
-using VivesRental.Services.Model.Requests;
+using System.Text;
 using VivesRental.Services.Model.Results;
+using VivesRental.Services.Model.Requests;
+using VivesRental.Enums;
+using VivesRental.Services.Model.Filters;
 
 namespace VivesRental.Ui.Blazor.Sdk
 {
@@ -63,6 +64,28 @@ namespace VivesRental.Ui.Blazor.Sdk
             var response = await client.DeleteAsync($"/api/Article/{id}");
             if (response.StatusCode == HttpStatusCode.NoContent) return true;
             return response.IsSuccessStatusCode;
+        }
+
+        // New dedicated method
+        public async Task<List<ArticleResult>> GetAvailable(Guid productId, DateTime? from = null, DateTime? until = null)
+        {
+            var client = CreateClient();
+            var qs = new List<string>
+            {
+                $"productId={Uri.EscapeDataString(productId.ToString())}"
+            };
+
+            if (from.HasValue)
+                qs.Add($"availableFromDateTime={Uri.EscapeDataString(from.Value.ToString("o"))}");
+            if (until.HasValue)
+                qs.Add($"availableUntilDateTime={Uri.EscapeDataString(until.Value.ToString("o"))}");
+
+            var uri = "/api/Article/available";
+            if (qs.Count > 0)
+                uri += "?" + string.Join("&", qs);
+
+            var result = await client.GetFromJsonAsync<List<ArticleResult>>(uri);
+            return result ?? new List<ArticleResult>();
         }
     }
 }

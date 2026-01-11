@@ -117,5 +117,27 @@ namespace VivesRental.Api.Controllers
                 return StatusCode(500, new { error = ex.Message });
             }
         }
+
+        // GET: api/Article/available?productId={productId}&availableFromDateTime={from}&availableUntilDateTime={until}
+        [HttpGet("available")]
+        public async Task<IActionResult> GetAvailable([FromQuery] Guid productId, [FromQuery] DateTime? availableFromDateTime = null, [FromQuery] DateTime? availableUntilDateTime = null)
+        {
+            try
+            {
+                var filter = new ArticleFilter
+                {
+                    ProductId = productId,
+                    AvailableFromDateTime = availableFromDateTime,
+                    AvailableUntilDateTime = availableUntilDateTime
+                };
+
+                var articles = await _articleService.Find(filter);
+                return Ok(articles);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
     }
 }
