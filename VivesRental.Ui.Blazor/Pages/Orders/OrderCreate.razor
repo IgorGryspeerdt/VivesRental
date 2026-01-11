@@ -1,0 +1,91 @@
+﻿@page "/orders/create"
+@inject VivesRental.Ui.Blazor.Sdk.OrderSdkService OrderService
+@inject VivesRental.Ui.Blazor.Sdk.CustomerSdkService CustomerService
+@inject NavigationManager Navigation
+@using VivesRental.Services.Model.Results
+
+<PageTitle>Create order</PageTitle>
+
+<h3>Create order</h3>
+
+@if (isBusy)
+{
+    <p>Loading...</p>
+}
+else if (!string.IsNullOrEmpty(error))
+{
+    <div class="alert alert-danger">@error</div>
+}
+else
+{
+    <EditForm Model="selectedCustomerId" OnValidSubmit="CreateOrder">
+        <div class="mb-3">
+            <label class="form-label">Customer</label>
+            <InputSelect @bind-Value="selectedCustomerId" class="form-select">
+                <option value="">-- select customer --</option>
+                @foreach (var c in customers)
+                {
+                    <option value="@c.Id">@($"{c.FirstName} {c.LastName} ({c.Email})")</option>
+                }
+            </InputSelect>
+        </div>
+        <button class="btn btn-primary" @onclick="CreateOrder">Create</button>
+        <button class="btn btn-secondary ms-2" type="button" @onclick="Cancel">Cancel</button>
+    </EditForm>
+}
+
+@code {
+    private List<CustomerResult> customers = new();
+    private Guid? selectedCustomerId;
+    private bool isBusy = false;
+    private string? error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        isBusy = true;
+        try
+        {
+            customers = await CustomerService.GetAll();
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private async Task CreateOrder()
+    {
+        error = null;
+        if (selectedCustomerId == null || selectedCustomerId == Guid.Empty)
+        {
+            error = "Select a customer.";
+            return;
+        }
+
+        isBusy = true;
+        try
+        {
+            var created = await OrderService.Create(selectedCustomerId.Value);
+            if (created == null)
+            {
+                error = "Could not create order.";
+                return;
+            }
+            Navigation.NavigateTo($"/orders/{created.Id}");
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private void Cancel() => Navigation.NavigateTo("/orders");
+}

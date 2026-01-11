@@ -1,0 +1,219 @@
+﻿@page "/orders/{id:guid}"
+@inject VivesRental.Ui.Blazor.Sdk.OrderSdkService OrderService
+@inject VivesRental.Ui.Blazor.Sdk.OrderLineSdkService OrderLineService
+@inject VivesRental.Ui.Blazor.Sdk.ArticleSdkService ArticleService
+@inject VivesRental.Ui.Blazor.Sdk.ProductSdkService ProductService
+@inject NavigationManager Navigation
+@using VivesRental.Services.Model.Results
+@using VivesRental.Services.Model.Filters
+@using VivesRental.Enums
+@inject IJSRuntime JS
+
+<PageTitle>Order details</PageTitle>
+
+@if (isBusy)
+{
+    <p>Loading...</p>
+}
+else if (!string.IsNullOrEmpty(error))
+{
+    <div class="alert alert-danger">@error</div>
+}
+else if (order == null)
+{
+    <div class="alert alert-warning">Order not found.</div>
+}
+else
+{
+    <h3>Order @order.Id</h3>
+
+    <dl class="row">
+        <dt class="col-sm-3">Customer</dt>
+        <dd class="col-sm-9">@($"{order.CustomerFirstName} {order.CustomerLastName}")</dd>
+        <dt class="col-sm-3">Created</dt>
+        <dd class="col-sm-9">@order.CreatedAt.ToString("g")</dd>
+        <dt class="col-sm-3">Returned</dt>
+        <dd class="col-sm-9">@((order.ReturnedAt.HasValue) ? order.ReturnedAt.Value.ToString("g") : "-")</dd>
+    </dl>
+
+    <h4>Order lines</h4>
+    <table class="table table-sm">
+        <thead><tr><th>Product</th><th>Rented</th><th>Expires</th><th>Returned</th><th></th></tr></thead>
+        <tbody>
+            @foreach (var ol in orderLines)
+            {
+                <tr>
+                    <td>@ol.ProductName</td>
+                    <td>@ol.RentedAt.ToString("g")</td>
+                    <td>@ol.ExpiresAt.ToString("g")</td>
+                    <td>@(ol.ReturnedAt?.ToString("g") ?? "-")</td>
+                    <td>
+                        @if (!ol.ReturnedAt.HasValue)
+                        {
+                            <AuthorizeView Roles="Medewerker">
+                                <Authorized>
+                                    <button class="btn btn-sm btn-secondary" @onclick="() => ReturnLine(ol.Id)">Return</button>
+                                </Authorized>
+                            </AuthorizeView>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <h4>Rent articles</h4>
+    <div class="row g-3 align-items-end">
+        <div class="col-md-4">
+            <label class="form-label">Product</label>
+            <InputSelect @bind-Value="selectedProductId" class="form-select" @onchange="LoadAvailableArticles">
+                <option value="">-- select product --</option>
+                @foreach (var p in products)
+                {
+                    <option value="@p.Id">@p.Name</option>
+                }
+            </InputSelect>
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label">Available articles</label>
+            <select multiple class="form-select" @bind="@selectedArticleIds">
+                @foreach (var a in availableArticles)
+                {
+                    <option value="@a.Id">@($"{a.ProductName} - {a.Id}")</option>
+                }
+            </select>
+        </div>
+
+        <div class="col-md-2">
+            <button class="btn btn-primary" @onclick="RentSelected" disabled="@(selectedArticleIds == null || !selectedArticleIds.Any())">Rent</button>
+        </div>
+    </div>
+
+    <div class="mt-3">
+        <button class="btn btn-secondary" @onclick="Back">Back</button>
+    </div>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private OrderResult? order;
+    private List<OrderLineResult> orderLines = new();
+    private List<VivesRental.Services.Model.Results.ProductResult> products = new();
+    private List<VivesRental.Services.Model.Results.ArticleResult> availableArticles = new();
+    private List<Guid> selectedArticleIds = new();
+    private Guid? selectedProductId;
+    private bool isBusy = true;
+    private string? error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Load();
+    }
+
+    private async Task Load()
+    {
+        isBusy = true;
+        error = null;
+        try
+        {
+            order = await OrderService.Get(Id);
+            orderLines = await OrderLineService.GetAll(Id);
+            products = await ProductService.GetAll();
+            availableArticles.Clear();
+            selectedArticleIds.Clear();
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private async Task LoadAvailableArticles(ChangeEventArgs? e = null)
+    {
+        if (!selectedProductId.HasValue || selectedProductId == Guid.Empty)
+        {
+            availableArticles = new List<VivesRental.Services.Model.Results.ArticleResult>();
+            selectedArticleIds.Clear();
+            return;
+        }
+
+        isBusy = true;
+        try
+        {
+            var filter = new ArticleFilter
+            {
+                ProductId = selectedProductId,
+                AvailableFromDateTime = DateTime.Now
+            };
+            availableArticles = await ArticleService.GetAll(filter);
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private async Task RentSelected()
+    {
+        if (selectedArticleIds == null || !selectedArticleIds.Any())
+            return;
+
+        isBusy = true;
+        try
+        {
+            var ok = await OrderLineService.RentMany(Id, selectedArticleIds);
+            if (!ok)
+            {
+                error = "Renting failed. Some articles may no longer be available.";
+                return;
+            }
+            await Load(); // refresh order lines
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private async Task ReturnLine(Guid orderLineId)
+    {
+        var confirmed = await JS.InvokeAsync<bool>("confirm", "Return this item?");
+        if (!confirmed) return;
+
+        isBusy = true;
+        try
+        {
+            var ok = await OrderLineService.Return(orderLineId, DateTime.Now);
+            if (!ok)
+            {
+                error = "Return failed.";
+                return;
+            }
+            await Load();
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private void Back() => Navigation.NavigateTo("/orders");
+}

@@ -49,6 +49,65 @@ public class OrderLineController : ControllerBase
         }
     }
 
+    // POST: api/OrderLine/rent?orderId={orderId}&articleId={articleId}
+    // Rent a single article for an order
+    [HttpPost("rent")]
+    [Authorize(Roles = "Medewerker")]
+    public async Task<IActionResult> Rent([FromQuery] Guid orderId, [FromQuery] Guid articleId)
+    {
+        try
+        {
+            var success = await _orderLineService.Rent(orderId, articleId);
+            if (!success)
+                return BadRequest(new { error = "Could not rent article. It may not be available." });
+
+            return NoContent();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return Conflict(new { error = "Concurrency error while renting the article." });
+        }
+        catch (ArgumentException aex)
+        {
+            return BadRequest(new { error = aex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { error = ex.Message });
+        }
+    }
+
+    // POST: api/OrderLine/rentMany?orderId={orderId}
+    // Rent multiple articles for an order (body: [guid,...])
+    [HttpPost("rentMany")]
+    [Authorize(Roles = "Medewerker")]
+    public async Task<IActionResult> RentMany([FromQuery] Guid orderId, [FromBody] List<Guid> articleIds)
+    {
+        try
+        {
+            if (articleIds == null || articleIds.Count == 0)
+                return BadRequest(new { error = "No article ids supplied." });
+
+            var success = await _orderLineService.Rent(orderId, articleIds);
+            if (!success)
+                return BadRequest(new { error = "Could not rent all requested articles. Some may not be available." });
+
+            return NoContent();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return Conflict(new { error = "Concurrency error while renting the articles." });
+        }
+        catch (ArgumentException aex)
+        {
+            return BadRequest(new { error = aex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { error = ex.Message });
+        }
+    }
+
     // PATCH: api/OrderLine/{id}/return
     // Mark a single orderline as returned (sets ReturnedAt).
     [HttpPatch("{id}/return")]
