@@ -1,14 +1,15 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using VivesRental.Model;
 using VivesRental.Repository.Extensions;
 
 namespace VivesRental.Repository.Core;
 
-public class VivesRentalDbContext: DbContext
+public class VivesRentalDbContext : IdentityDbContext<IdentityUser>
 {
-    public VivesRentalDbContext(DbContextOptions options): base(options)
+    public VivesRentalDbContext(DbContextOptions options) : base(options)
     {
-            
     }
 
     public DbSet<Product> Products => Set<Product>();

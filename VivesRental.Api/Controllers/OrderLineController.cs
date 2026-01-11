@@ -1,7 +1,6 @@
-    
-
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 using VivesRental.Services.Abstractions;
 using VivesRental.Services.Model.Filters;
 
@@ -53,6 +52,7 @@ public class OrderLineController : ControllerBase
     // PATCH: api/OrderLine/{id}/return
     // Mark a single orderline as returned (sets ReturnedAt).
     [HttpPatch("{id}/return")]
+    [Authorize(Roles = "Medewerker")]
     public async Task<IActionResult> Return(Guid id, [FromBody] DateTime? returnedAt)
     {
         try

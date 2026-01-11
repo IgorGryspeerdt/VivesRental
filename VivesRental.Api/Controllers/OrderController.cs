@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 using VivesRental.Services.Abstractions;
 using VivesRental.Services.Model.Filters;
 
@@ -50,6 +51,7 @@ namespace VivesRental.Api.Controllers
 
         // POST: api/Order?customerId={customerId}
         [HttpPost]
+        [Authorize(Roles = "Medewerker")]
         public async Task<IActionResult> Create([FromQuery] Guid customerId)
         {
             try

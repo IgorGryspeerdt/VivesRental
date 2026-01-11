@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 using VivesRental.Services.Abstractions;
 using VivesRental.Services.Model.Filters;
 using VivesRental.Services.Model.Requests;
@@ -51,6 +52,7 @@ namespace VivesRental.Api.Controllers
 
         // POST: api/ArticleReservation
         [HttpPost]
+        [Authorize(Roles = "Medewerker")]
         public async Task<IActionResult> Create([FromBody] ArticleReservationRequest request)
         {
             if (!ModelState.IsValid)
@@ -77,6 +79,7 @@ namespace VivesRental.Api.Controllers
 
         // DELETE: api/ArticleReservation/{id}
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Medewerker")]
         public async Task<IActionResult> Delete(Guid id)
         {
             try

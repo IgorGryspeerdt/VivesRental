@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using VivesRental.Repository.Core;
 
@@ -11,9 +12,11 @@ using VivesRental.Repository.Core;
 namespace VivesRental.Repository.Migrations
 {
     [DbContext(typeof(VivesRentalDbContext))]
-    partial class VivesRentalDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260110165248_SyncModel")]
+    partial class SyncModel
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
