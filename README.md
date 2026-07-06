@@ -1,10 +1,10 @@
 # VivesRental
 
-A rental management web application built primarily with **C#** (with HTML, CSS, and JavaScript for the frontend).
+A rental management web application built primarily with **C#** (with HTML, CSS, and JavaScript for the frontend). (school project)
 
 ## Overview
 
-VivesRental appears to be a full-stack web project focused on rental workflows (such as listing, managing, and/or booking rental items or properties).
+VivesRental is a full-stack web project focused on rental workflows (such as listing, managing, and/or booking rental items or properties).
 
 ## Tech Stack
 
@@ -15,11 +15,6 @@ VivesRental appears to be a full-stack web project focused on rental workflows (
 
 - **Owner:** IgorGryspeerdt
 - **Repository:** VivesRental
-
-## Getting Started
-
-> The exact setup commands can differ depending on the project structure and target .NET version.
-> If you share the `*.sln`, `*.csproj`, and configuration files, this section can be made fully specific.
 
 ### 1) Clone the repository
 
@@ -75,17 +70,3 @@ Frontend assets are likely located in `wwwroot/` or equivalent folders.
 2. Create a feature branch
 3. Commit your changes
 4. Open a pull request
-
-## License
-
-No license has been specified yet. Add a `LICENSE` file if you want to define usage terms.
-
----
-
-If you want, I can also generate a **more detailed README** with:
-- screenshots section
-- feature list
-- architecture diagram
-- database setup
-- deployment instructions
-- API endpoint documentation
